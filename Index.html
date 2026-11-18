@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기사 프로젝트 노트</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #000; color: #fff;
+    font-family: -apple-system, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+    line-height: 1.6; font-size: 16px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 26px; margin: 0 0 28px; letter-spacing: -0.02em; }
+  section { border-top: 1px solid #333; padding: 20px 0; }
+  h2 { font-size: 13px; font-weight: 600; color: #999; margin: 0 0 10px; letter-spacing: 0.08em; }
+  .field {
+    width: 100%; background: transparent; color: #fff; border: none;
+    border-bottom: 1px dashed #444; padding: 8px 0; font: inherit; font-size: 17px;
+  }
+  .field:focus { outline: none; border-bottom-color: #fff; }
+  .field::placeholder { color: #555; }
+  .tag { display: inline-block; border: 1px solid #fff; border-radius: 999px; padding: 4px 14px; font-size: 15px; }
+  .team-row { display: flex; gap: 10px; margin-bottom: 6px; }
+  .team-row .field:first-child { flex: 0 0 38%; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li.todo { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+  li.todo input[type=checkbox] { width: 22px; height: 22px; accent-color: #fff; flex-shrink: 0; }
+  li.todo.done .field { color: #666; text-decoration: line-through; }
+  .log { display: flex; gap: 14px; align-items: baseline; padding: 6px 0; }
+  .log .date { flex: 0 0 52px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  button {
+    margin-top: 12px; background: #fff; color: #000; border: none; border-radius: 8px;
+    padding: 10px 16px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  @media (max-width: 480px) {
+    .wrap { padding: 24px 16px 48px; }
+    h1 { font-size: 22px; }
+    .team-row { flex-direction: column; gap: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>기사 프로젝트 노트</h1>
+
+  <section>
+    <h2>프로젝트 한 줄</h2>
+    <input class="field" data-key="brief" placeholder="브리프 한 줄을 적어 줘">
+  </section>
+
+  <section>
+    <h2>주제</h2>
+    <span class="tag">경제</span>
+  </section>
+
+  <section>
+    <h2>할 일 체크리스트</h2>
+    <ul id="todos"></ul>
+  </section>
+
+  <section>
+    <h2>날짜별 기록</h2>
+    <div id="logs"></div>
+    <button id="addLog">+ 오늘 기록 추가</button>
+  </section>
+</div>
+
+<script>
+  var store = {};
+  try { store = JSON.parse(localStorage.getItem('article-note') || '{}'); } catch (e) {}
+  function save() { try { localStorage.setItem('article-note', JSON.stringify(store)); } catch (e) {} }
+
+  // 할 일 5개
+  var todos = document.getElementById('todos');
+  for (var i = 1; i <= 5; i++) {
+    var li = document.createElement('li');
+    li.className = 'todo';
+    li.innerHTML = '<input type="checkbox" data-key="todo' + i + '-done">' +
+                   '<input class="field" data-key="todo' + i + '" placeholder="할 일 ' + i + '">';
+    todos.appendChild(li);
+  }
+
+  // 날짜별 기록 (11/18부터)
+  var logs = document.getElementById('logs');
+  if (!store.logDates) store.logDates = ['11/18'];
+  function renderLogs() {
+    logs.innerHTML = '';
+    store.logDates.forEach(function (d) {
+      var row = document.createElement('div');
+      row.className = 'log';
+      row.innerHTML = '<span class="date">' + d + '</span>' +
+                      '<input class="field" data-key="log-' + d + '" placeholder="오늘 한 줄">';
+      logs.appendChild(row);
+    });
+    bind();
+  }
+  document.getElementById('addLog').onclick = function () {
+    var now = new Date();
+    var d = (now.getMonth() + 1) + '/' + now.getDate();
+    if (store.logDates.indexOf(d) === -1) { store.logDates.push(d); save(); renderLogs(); }
+  };
+
+  function bind() {
+    document.querySelectorAll('[data-key]').forEach(function (el) {
+      var k = el.dataset.key;
+      if (el.type === 'checkbox') {
+        el.checked = !!store[k];
+        el.closest('li').classList.toggle('done', el.checked);
+        el.onchange = function () { store[k] = el.checked; el.closest('li').classList.toggle('done', el.checked); save(); };
+      } else {
+        el.value = store[k] || '';
+        el.oninput = function () { store[k] = el.value; save(); };
+      }
+    });
+  }
+  renderLogs();
+</script>
+</body>
+</html>
